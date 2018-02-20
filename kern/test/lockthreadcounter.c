@@ -102,7 +102,7 @@ int
 lockthreadcounter(int nargs, char **args)
 {	
 	
-	int NTHREADS = 10;
+	 int NTHREADS = 10;
     int INCREMENTS = 1;
 
 	if( nargs > 1 ){

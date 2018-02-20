@@ -64,6 +64,9 @@ void sys__exit(int exitcode);
 int sys_getpid(pid_t *retval);
 int sys_waitpid(pid_t pid, userptr_t status, int options, pid_t *retval);
 
+int sys_fork(struct trapframe *tf, pid_t pid); //added for lab 8
+
+
 #endif // UW
 
 #endif /* _SYSCALL_H_ */

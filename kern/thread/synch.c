@@ -173,7 +173,7 @@ void
 lock_acquire(struct lock *lock)
 {
 	spinlock_acquire(&lock->lk_spinlock);
-	if(lock_do_i_hold(lock))//we don't already have acquired it!
+	if(lock_do_i_hold(lock))
 	{
 		spinlock_release(&lock->lk_spinlock);
 		return;
@@ -186,7 +186,6 @@ lock_acquire(struct lock *lock)
 			spinlock_release(&lock->lk_spinlock);
 			wchan_sleep(lock->lk_wchan);
 
-			//returns from sleep here
 			spinlock_acquire(&lock->lk_spinlock);
 		}
 		lock->lk_owner = curthread;
@@ -341,34 +340,25 @@ void rwlock_acquire_read(struct rwlock *rwlock)
 {
 	lock_acquire(rwlock->lk);
 
-	//while a writer is writing DONT LET ANY READERS IN
-	//OR if we need to hold readers - aka LET CURRENT READERS FINISH!
 	while(rwlock->is_writing == 1 || rwlock->hold_readers == 1){
-		cv_wait(rwlock->read_cv, rwlock->lk);//READERS THAT ARE WAITING FOR WRITERS
+		cv_wait(rwlock->read_cv, rwlock->lk);
 	}
-	rwlock->num_readers++;//current reader reading!
+	rwlock->num_readers++;
 	lock_release(rwlock->lk);
 }
 
 void rwlock_release_read(struct rwlock *rwlock)
 {
 	lock_acquire(rwlock->lk);
-	rwlock->num_readers--;//Current reader DONE reading.
+	rwlock->num_readers--;
 
-	//After each reader releases the lock, we want to see if writers are waiting
-	//If so we want to let all readers to finish which would allow a writer to come in
-	//Else if there are no writers waiting we can keep signaling readers if they are there.
 	if(rwlock->hold_readers == 1 && rwlock->num_readers > 0){
-		//still readers that need to finish - so do nothing until they finish.
-	}	//once all readers have finished:
+		}	
 	else if(rwlock->hold_readers == 1 && rwlock->num_readers == 0){
-		//SIGNAL READERS AND WRITERS AND LET THEM COMPETE evenly
-		rwlock->hold_readers = 0;//we don't need to hold readers anymore
-    //HERE WE ARE PURPOSELY BROADCASTING READERS AND NOT WRITERS
-    //Since we expect their to be mmore read instructions than write
-		cv_signal(rwlock->read_cv, rwlock->lk);
+		rwlock->hold_readers = 0;
+    	cv_signal(rwlock->read_cv, rwlock->lk);
 		cv_signal(rwlock->write_cv, rwlock->lk);
-	}else{	//No writers waiting so broadcast all readers if any waiting
+	}else{	
 		cv_broadcast(rwlock->read_cv, rwlock->lk);
 	}
 	lock_release(rwlock->lk);
@@ -378,27 +368,20 @@ void rwlock_acquire_write(struct rwlock *rwlock)
 {
 	lock_acquire(rwlock->lk);
 
-	//IF another thread is CURRENTLY reading or writing, allow it to finish
 	while(rwlock->is_writing == 1 || rwlock->num_readers > 0){
 		rwlock->hold_readers = 1;
 		cv_wait(rwlock->write_cv, rwlock->lk);
 	}
-	rwlock->hold_readers = 0;//readers finished,since we are now writing
-	rwlock->is_writing = 1;//writer has the lock and is writing
-	lock_release(rwlock->lk); //--Don't release lock till writing is ready to release??--
+	rwlock->hold_readers = 0;
+	rwlock->is_writing = 1;
+	lock_release(rwlock->lk); 
 }
 
 void rwlock_release_write(struct rwlock *rwlock)
 {
-	lock_acquire(rwlock->lk);//--writer finished writing... now releasing--
-	rwlock->is_writing = 0;//writers should go back to 0
+	lock_acquire(rwlock->lk);
+	rwlock->is_writing = 0;
 
-	//After writer releases, lock become "UNHELD" either a reader OR a writer can come next
-	//Should we randomly allow either a read or write to come next??
-	//SIGNAL ALL Readers and WRITERS NOW! - Since we have the lock, they will be competing
-	//for the lock once we release it.
-    //HERE WE ARE PURPOSELY BROADCASTING READERS AND NOT WRITERS 
-    //Since we expect their to be more read instructions than write
 	cv_signal(rwlock->read_cv, rwlock->lk);
 	cv_signal(rwlock->write_cv, rwlock->lk);
 

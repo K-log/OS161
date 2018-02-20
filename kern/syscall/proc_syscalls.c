@@ -92,3 +92,15 @@ sys_waitpid(pid_t pid,
   return(0);
 }
 
+/* Lab 10 */
+int 
+uproc_thread(void *temp_tr, unsigned long k)
+{
+		
+}
+
+int
+sys_fork(struct trapframe *tf, pid_t *retval)
+{
+	return(1);
+}

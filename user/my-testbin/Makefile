@@ -4,7 +4,7 @@ TOP=../..
 
 # Just add new directories at the end of the line below.
 
-SUBDIRS= example writeConsole getpid timeOfDay 
+SUBDIRS= example writeConsole getpid timeOfDay stubtest
 .include "$(TOP)/mk/os161.subdir.mk"
 
 

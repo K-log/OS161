@@ -145,6 +145,9 @@ int link(const char *oldfile, const char *newfile);
 /* fstat - see sys/stat.h */
 int chdir(const char *path);
 
+/* Lab 8 - Fork */
+int fork(void);
+
 /* Optional. */
 void *sbrk(int change);
 int getdirentry(int filehandle, char *buf, size_t buflen);
